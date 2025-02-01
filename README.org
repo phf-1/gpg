@@ -1,0 +1,293 @@
+#+PROPERTY: header-args :comments org :noweb yes :mkdirp t
+
+* gpg
+
+1. You enter a passphrase for the first time to use a key.
+2. gpg-agent caches this passphrase.
+3. For the next hour (3600 seconds), you can use that key without re-entering the
+   passphrase.
+4. If you continue to use the key, the cache won't expire until 2 hours have passed
+   since the last use (7200 seconds).
+5. Once either default-cache-ttl or max-cache-ttl is exceeded without further use,
+   you'll need to enter the passphrase again.
+
+Note: If no-symkey-cache was enabled in gpg.conf, symmetric key passphrases would not
+be cached. However, this setting is for symmetric encryption, not for private key
+passphrases, which are still managed by gpg-agent.
+
+This setup provides both convenience (by not requiring repeated passphrase entry) and
+security (by not keeping passphrases cached indefinitely).
+
+** gpg.conf
+:PROPERTIES:
+:header-args: :tangle ~/.gnupg/gpg.conf
+:END:
+
+*** digest-algo
+- This parameter specifies the preferred hash algorithms for message digests.
+- Here, SHA-512 is set as the preferred algorithm because it provides a higher level
+  of security due to its larger output size which makes it more resistant to
+  collisions.
+
+#+begin_src conf-space
+digest-algo sha512
+#+end_src
+
+*** personal-cipher-preferences
+- This option allows you to set your preferred symmetric encryption algorithms.
+- The order of algorithms listed here indicates the priority in which they will be
+  used for encryption. AES256 is the most secure option listed, followed by AES192,
+  and then standard AES (which typically means AES128).
+
+#+begin_src conf-space
+personal-cipher-preferences AES256 AES192 AES
+#+end_src
+
+*** personal-digest-preferences
+- Specifies the user's preferred digest (hash) algorithms for signatures.
+- It prioritizes stronger and more secure hash functions.
+
+#+begin_src conf-space
+personal-digest-preferences SHA512 SHA384 SHA256
+#+end_src
+
+*** personal-compress-preferences
+- Sets the user's preferred compression algorithms for data compression.
+- The order indicates preference, with ZLIB being the most preferred, followed by
+  BZIP2, ZIP, and then no compression (Uncompressed).
+
+#+begin_src conf-space
+personal-compress-preferences ZLIB BZIP2 ZIP Uncompressed
+#+end_src
+
+*** default-preference-list
+- Defines the default list of algorithms and options for new keys, affecting how new
+  keys handle encryption, signing, and compression. This comprehensive list ensures
+  compatibility and security across different GPG operations.
+
+#+begin_src conf-space
+default-preference-list SHA512 SHA384 SHA256 AES256 AES192 AES ZLIB BZIP2 ZIP Uncompressed
+#+end_src
+
+*** cert-digest-algo
+- Specifies the digest algorithm used for creating certificate signatures, which are
+  used to authenticate keys. SHA512 is chosen for its security strength.
+
+#+begin_src conf-space
+cert-digest-algo SHA512
+#+end_src
+
+*** s2k-digest-algo
+- Sets the digest algorithm used for the string-to-key (S2K) function in
+  passphrase-based key derivation. SHA512 provides strong security for this process.
+
+#+begin_src conf-space
+s2k-digest-algo SHA512
+#+end_src
+
+*** s2k-cipher-algo
+- Defines the cipher algorithm used in the S2K process. AES256 is selected for its
+  high security level.
+
+#+begin_src conf-space
+s2k-cipher-algo AES256
+#+end_src
+
+*** charset
+- Sets the character set for text encodings. UTF-8 is used for its wide compatibility
+  and ability to handle multiple languages.
+
+#+begin_src conf-space
+charset utf-8
+#+end_src
+
+*** fixed-list-mode
+- When enabled, this option forces a fixed listing format for all lists, which can
+  help in parsing the output programmatically.
+
+#+begin_src conf-space
+fixed-list-mode
+#+end_src
+
+*** no-comments
+- Suppresses comments in the output, which can be useful for cleaner,
+  machine-readable output.
+
+#+begin_src conf-space
+no-comments
+#+end_src
+
+*** no-emit-version
+- Prevents GPG from outputting version information, enhancing privacy by not
+  revealing the software version.
+
+#+begin_src conf-space
+no-emit-version
+#+end_src
+
+*** no-greeting
+- Omits the greeting message when starting GPG, reducing unnecessary output.
+
+#+begin_src conf-space
+no-greeting
+#+end_src
+
+*** keyid-format
+- Sets the format of key IDs to long hexadecimal format, which provides more detail
+  for key identification.
+
+#+begin_src conf-space
+keyid-format 0xlong
+#+end_src
+
+*** list-options
+- Configures what additional information is shown when listing keys. Here, it shows
+  the validity of user IDs.
+
+#+begin_src conf-space
+list-options show-uid-validity
+#+end_src
+
+*** verify-options
+- Similar to list-options but applies to verification operations, showing UID
+  validity.
+
+#+begin_src conf-space
+verify-options show-uid-validity
+#+end_src
+
+*** with-fingerprint
+- Adds the fingerprint to the key listing, which is useful for key verification.
+
+#+begin_src conf-space
+with-fingerprint
+#+end_src
+
+*** require-cross-certification
+- Ensures that subkeys are only valid if they are cross-certified by the primary key,
+  enhancing security.
+
+#+begin_src conf-space
+require-cross-certification
+#+end_src
+
+*** throw-keyids
+- When enabled, this option prevents the key ID from being included in encrypted
+  messages, adding a layer of privacy.
+
+#+begin_src conf-space
+throw-keyids
+#+end_src
+
+*** use-agent
+- Uses GPG agent for handling passphrases, which can provide better security and
+  usability for key management.
+
+#+begin_src conf-space
+use-agent
+#+end_src
+
+** gpg-agent
+*** conf
+:PROPERTIES:
+:header-args: :tangle ~/.gnupg/gpg-agent.conf
+:END:
+
+**** default-cache-ttl
+- This sets the default time-to-live for cached passphrases in seconds. Here, it's
+  set to 1 hour (3600 seconds), which means after entering a passphrase, you won't
+  need to re-enter it for one hour if you're using the same key again.
+
+#+begin_src conf-space
+default-cache-ttl 3600
+#+end_src
+
+**** max-cache-ttl
+- This defines the maximum time-to-live for cached passphrases, set to 2 hours (7200
+  seconds). This is the longest duration a passphrase can be cached, regardless of
+  how often the key is used, providing a balance between security and convenience.
+
+#+begin_src conf-space
+max-cache-ttl 7200
+#+end_src
+
+**** pinentry-program
+- Specifies the program to use for passphrase entry.
+
+#+begin_src conf-space
+pinentry-program /usr/bin/pinentry
+#+end_src
+
+*** service
+:PROPERTIES:
+:header-args: :tangle ~/.config/systemd/user/gpg-agent.service
+:END:
+
+#+begin_src systemd
+[Unit]
+Description=GnuPG cryptographic agent and passphrase cache
+Documentation=man:gpg-agent(1)
+Requires=gpg-agent.socket
+
+[Service]
+ExecStart=%h/.guix-profile/bin/gpg-agent --supervised
+ExecReload=%h/.guix-profile/bin/gpgconf --reload gpg-agent
+#+end_src
+
+*** socket
+:PROPERTIES:
+:header-args: :tangle ~/.config/systemd/user/gpg-agent.socket
+:END:
+
+#+begin_src systemd
+[Unit]
+Description=GnuPG cryptographic agent and passphrase cache (socket)
+
+[Socket]
+ListenStream=%t/gnupg/S.gpg-agent
+FileDescriptorName=std
+SocketMode=0600
+
+[Install]
+WantedBy=sockets.target
+#+end_src
+
+*** env
+:PROPERTIES:
+:header-args: :tangle _build/gpg-variables
+:END:
+
+**** GPG_AGENT_INFO
+- Sets the environment variable for connecting to the GPG agent via its socket.
+
+#+begin_src bash
+export GPG_AGENT_INFO=/run/user/$UID/gnupg/S.gpg-agent
+#+end_src
+
+**** GPG_TTY
+- Associates the current terminal with GPG operations for correct passphrase prompting.
+  
+#+begin_src bash
+export GPG_TTY=$(tty)
+#+end_src
+
+** Makefile
+:PROPERTIES:
+:header-args: :tangle Makefile
+:END:
+
+#+begin_src makefile
+SHELL := bash
+.ONESHELL:
+.SHELLFLAGS := -ceuo pipefail
+.SILENT:
+
+.PHONY: all
+all:
+	emacs -Q --batch --file gpg.org -f org-babel-tangle
+	systemctl --user daemon-reload
+	systemctl --user enable gpg-agent.socket
+	systemctl --user start gpg-agent.socket
+	systemctl --user status gpg-agent.socket
+	systemctl --user status gpg-agent.service
+#+end_src
