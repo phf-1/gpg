@@ -18,6 +18,25 @@ passphrases, which are still managed by gpg-agent.
 This setup provides both convenience (by not requiring repeated passphrase entry) and
 security (by not keeping passphrases cached indefinitely).
 
+** Make a keypair
+
+#+begin_src bash
+gpg --full-generate-key
+#+end_src
+
+*** Upload your key to a keyserver
+
+- We will upload your key to a keyserver, so if someone wants to send you an
+  encrypted message, they can download your public key from the Internet.
+
+#+begin_src bash
+gpg --send-key 3C6BE94C9E9C42DD682AF47891C26F3A2F62156A
+#+end_src
+
+#+begin_example
+gpg: sending key 0x91C26F3A2F62156A to hkps://keys.openpgp.org
+#+end_example
+
 ** gpg.conf
 :PROPERTIES:
 :header-args: :tangle ~/.gnupg/gpg.conf
@@ -266,7 +285,7 @@ export GPG_AGENT_INFO=/run/user/$UID/gnupg/S.gpg-agent
 
 **** GPG_TTY
 - Associates the current terminal with GPG operations for correct passphrase prompting.
-  
+
 #+begin_src bash
 export GPG_TTY=$(tty)
 #+end_src
@@ -284,7 +303,7 @@ SHELL := bash
 
 .PHONY: all
 all:
-	emacs -Q --batch --file gpg.org -f org-babel-tangle
+	emacs -Q --batch --file README.org -f org-babel-tangle
 	systemctl --user daemon-reload
 	systemctl --user enable gpg-agent.socket
 	systemctl --user start gpg-agent.socket
